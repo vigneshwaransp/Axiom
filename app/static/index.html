@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="FIFA World Cup 2026 Stadium Operations - CrowdFlow Assist wayfinding application.">
+    <title>FIFA 2026 CrowdFlow Assist - MetLife Stadium</title>
+    <!-- Google Fonts: Outfit and Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="app.css">
+</head>
+<body>
+    <header class="glass-header" role="banner">
+        <div class="header-container">
+            <div class="brand">
+                <span class="fifa-badge">FIFA 2026</span>
+                <h1>CrowdFlow <span class="gradient-text">Assist</span></h1>
+            </div>
+            
+            <div class="settings-group">
+                <!-- Connectivity status -->
+                <div class="network-badge" id="network-status" aria-live="polite">
+                    <span class="status-dot online"></span>
+                    <span class="status-label">Stadium Wi-Fi (Connected)</span>
+                </div>
+
+                <!-- Language Selector -->
+                <label for="lang-select" class="sr-only">Choose Language</label>
+                <select id="lang-select" class="language-dropdown" aria-label="Select Language">
+                    <option value="en" selected>English</option>
+                    <option value="es">Español</option>
+                    <option value="fr">Français</option>
+                    <option value="ja">日本語</option>
+                </select>
+            </div>
+        </div>
+    </header>
+
+    <main class="dashboard-grid" role="main">
+        <!-- Interactive Wayfinding Query Card -->
+        <section class="card glass-card search-card" aria-labelledby="wayfinding-heading">
+            <h2 id="wayfinding-heading"><span class="icon">🧭</span> Navigation Planner</h2>
+            <form id="route-form">
+                <div class="form-group">
+                    <label for="start-node">Current Seating / Gate</label>
+                    <select id="start-node" required>
+                        <optgroup label="Upper Level 300">
+                            <option value="sec_301">Upper Section 301</option>
+                            <option value="sec_304">Upper Section 304</option>
+                        </optgroup>
+                        <optgroup label="Mid Level 200">
+                            <option value="sec_201">Mid Section 201</option>
+                            <option value="sec_204">Mid Section 204</option>
+                        </optgroup>
+                        <optgroup label="Lower Level 100">
+                            <option value="sec_101">Lower Section 101</option>
+                            <option value="sec_104">Lower Section 104</option>
+                        </optgroup>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="dest-node">Where do you want to go?</label>
+                    <select id="dest-node" required>
+                        <optgroup label="Transportation Hubs">
+                            <option value="train_station" selected>MetLife Train Station</option>
+                            <option value="rideshare_hub">Rideshare Pick-up Lot</option>
+                            <option value="parking_lot_a">East Parking Lot A</option>
+                            <option value="parking_lot_b">West Parking Lot B</option>
+                        </optgroup>
+                        <optgroup label="Concourse Gates">
+                            <option value="gate_a">MetLife Gate A (East)</option>
+                            <option value="gate_b">Verizon Gate B (North)</option>
+                            <option value="gate_c">Pepsi Gate C (West)</option>
+                            <option value="gate_d">HCLTech Gate D (South)</option>
+                        </optgroup>
+                    </select>
+                </div>
+
+                <div class="form-group toggle-group">
+                    <label class="switch-container">
+                        <input type="checkbox" id="wheelchair-toggle">
+                        <span class="slider"></span>
+                        <span class="switch-label">♿ Wheelchair / Accessible Route</span>
+                    </label>
+                </div>
+
+                <div class="form-group">
+                    <label for="query-input">Specific Assistance Request (Voice/Text)</label>
+                    <textarea id="query-input" placeholder="e.g., Guide me to the train avoiding stairs in Spanish..." rows="2" maxlength="250"></textarea>
+                    <span class="char-counter" id="char-count">0 / 250</span>
+                </div>
+
+                <button type="submit" class="btn btn-primary" id="search-btn">
+                    <span>Generate Smart Route</span>
+                    <span class="spinner hidden" id="search-spinner" aria-hidden="true"></span>
+                </button>
+            </form>
+        </section>
+
+        <!-- Interactive Map View -->
+        <section class="card glass-card map-card" aria-labelledby="map-heading">
+            <div class="card-header">
+                <h2 id="map-heading"><span class="icon">🗺️</span> Dynamic Stadium Floor Map</h2>
+                <div class="map-legend">
+                    <span class="legend-item"><span class="dot green"></span> Clear</span>
+                    <span class="legend-item"><span class="dot orange"></span> Moderate</span>
+                    <span class="legend-item"><span class="dot red"></span> Heavy Egress</span>
+                    <span class="legend-item"><span class="dot broken"></span> Out of Order</span>
+                </div>
+            </div>
+            
+            <div class="stadium-map-container" id="stadium-map-svg-container">
+                <!-- SVG map will be dynamically rendered here for pixel-perfect path overlays -->
+            </div>
+        </section>
+
+        <!-- Route Results Card -->
+        <section class="card glass-card results-card" id="results-panel" aria-live="polite" aria-labelledby="results-heading">
+            <h2 id="results-heading"><span class="icon">📋</span> Optimized Route Details</h2>
+            
+            <div class="results-empty" id="results-empty-state">
+                <p>Select your starting location and destination above to calculate the safest path.</p>
+            </div>
+
+            <div class="results-content hidden" id="results-content-panel">
+                <div class="metrics-grid">
+                    <div class="metric-box">
+                        <div class="metric-val" id="metric-time">--</div>
+                        <div class="metric-lbl">Est. Time</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-val" id="metric-distance">--</div>
+                        <div class="metric-lbl">Distance</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-val" id="metric-source">--</div>
+                        <div class="metric-lbl">Engine</div>
+                    </div>
+                </div>
+
+                <!-- GenAI Narrative Block -->
+                <div class="genai-box">
+                    <div class="genai-header">
+                        <span class="genai-badge">🤖 AI Steward Response</span>
+                        <span class="badge" id="fallback-badge">Cached</span>
+                    </div>
+                    <blockquote class="genai-text" id="genai-narrative">
+                        <!-- AI text injected here safely -->
+                    </blockquote>
+                </div>
+
+                <!-- Step by step timeline -->
+                <h3>Path Directions</h3>
+                <ol class="timeline" id="route-steps">
+                    <!-- Step list elements -->
+                </ol>
+            </div>
+        </section>
+
+        <!-- Live Operations Simulation Board (Admin/Volunteer Controls) -->
+        <section class="card glass-card control-card" aria-labelledby="control-heading">
+            <h2 id="control-heading"><span class="icon">⚙️</span> Operations Simulator (Live Sensor Feeds)</h2>
+            <p class="section-desc">Toggle stadium sensor data to simulate crowd bottlenecks and escalator failures, and watch the route planner dynamically adapt.</p>
+            
+            <div class="sensor-grid">
+                <div class="sensor-control">
+                    <label for="sensor-gate-a">MetLife Gate A (East) Egress Density</label>
+                    <select id="sensor-gate-a" class="sensor-select" data-node="gate_a">
+                        <option value="LOW" selected>Low Density (Clear)</option>
+                        <option value="MEDIUM">Medium Density (Slowing)</option>
+                        <option value="HIGH">High Density (Bottleneck)</option>
+                    </select>
+                </div>
+
+                <div class="sensor-control">
+                    <label for="sensor-gate-b">Verizon Gate B (North) Egress Density</label>
+                    <select id="sensor-gate-b" class="sensor-select" data-node="gate_b">
+                        <option value="LOW" selected>Low Density (Clear)</option>
+                        <option value="MEDIUM">Medium Density (Slowing)</option>
+                        <option value="HIGH">High Density (Bottleneck)</option>
+                    </select>
+                </div>
+
+                <div class="sensor-control">
+                    <label for="sensor-elev-east">Elevator East Operations</label>
+                    <select id="sensor-elev-east" class="sensor-select-status" data-node="elevator_east">
+                        <option value="true" selected>Operational</option>
+                        <option value="false">Out of Order (Maintenance)</option>
+                    </select>
+                </div>
+
+                <div class="sensor-control">
+                    <label for="sensor-elev-west">Elevator West Operations</label>
+                    <select id="sensor-elev-west" class="sensor-select-status" data-node="elevator_west">
+                        <option value="true" selected>Operational</option>
+                        <option value="false">Out of Order (Maintenance)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="toast-area" id="sensor-toast" aria-live="assertive"></div>
+        </section>
+    </main>
+
+    <footer class="footer" role="contentinfo">
+        <p>&copy; 2026 FIFA World Cup™ Venue Operations Platform. Designed for safe, accessible stadium egress.</p>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>
